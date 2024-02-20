@@ -1,0 +1,32 @@
+import pandas as pd
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from shapely.geometry import Point
+
+# Load traffic accident data
+accident_data = pd.read_csv('accident_data.csv')
+
+# Clean and preprocess data
+accident_data['date'] = pd.to_datetime(accident_data['date'])
+accident_data['time'] = pd.to_datetime(accident_data['time']).dt.time
+accident_data['weather'] = accident_data['weather'].str.lower()
+accident_data['road_condition'] = accident_data['road_condition'].str.lower()
+
+# Create GeoDataFrame for accident locations
+accident_points = [Point(xy) for xy in zip(accident_data['longitude'], accident_data['latitude'])]
+accident_data['geometry'] = gpd.points_from_xy(accident_points)
+accident_gdf = gpd.GeoDataFrame(accident_data, geometry='geometry')
+
+# Visualize accident hotspots
+fig, ax = plt.subplots(1, 1)
+accident_gdf.plot(ax=ax, color='red', markersize=5, alpha=0.5)
+plt.show()
+
+# Calculate accident hotspots
+hotspots = accident_gdf.groupby(['longitude', 'latitude']).size().reset_index(name='count')
+hotspots = gpd.GeoDataFrame(hotspots, geometry=gpd.points_from_xy(hotspots['longitude'], hotspots['latitude']))
+
+# Visualize accident hotspots
+fig, ax = plt.subplots(1, 1)
+hotspots.plot(ax=ax, color='red', markersize=5, alpha=0.5)
+plt.show()
